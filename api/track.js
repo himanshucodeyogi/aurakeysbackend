@@ -33,13 +33,14 @@ module.exports = async function handler(req, res) {
         device_id:    device.device_id,
         install_date: device.install_date || new Date().toISOString(),
         created_at:   new Date(),
-        total_app_opens:      0,
-        total_keyboard_opens: 0,
-        total_ai_uses:        0,
+      },
+      // $inc initialises missing counter fields to 0 then adds — no conflict with $setOnInsert
+      $inc: {
+        total_app_opens:      inc.total_app_opens      || 0,
+        total_keyboard_opens: inc.total_keyboard_opens || 0,
+        total_ai_uses:        inc.total_ai_uses        || 0,
       },
     };
-
-    if (Object.keys(inc).length > 0) updateDoc.$inc = inc;
 
     await db.collection('devices').updateOne(
       { device_id: device.device_id },

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AuraKeys Backend Tester</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0F0F13;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 24px;
+      font-size: 14px;
+    }
+    h1 { color: #8AB4F8; font-size: 20px; margin-bottom: 4px; }
+    .subtitle { color: #6B7280; margin-bottom: 28px; font-size: 13px; }
+
+    .config-box {
+      background: #1A1A24;
+      border: 1px solid #2A2A3A;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .config-box label { color: #6B7280; font-size: 12px; display: block; margin-bottom: 6px; }
+    .config-box input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0F0F13;
+      border: 1px solid #2A2A3A;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .config-box input:focus { border-color: #8AB4F8; }
+
+    .tests-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .test-card {
+      background: #1A1A24;
+      border: 1px solid #2A2A3A;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .test-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .test-card .endpoint { color: #6B7280; font-size: 12px; margin-bottom: 14px; font-family: monospace; }
+
+    .method-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+    .method-get  { background: rgba(76,175,80,0.2);  color: #4CAF50; }
+    .method-post { background: rgba(138,180,248,0.2); color: #8AB4F8; }
+
+    .btn-run {
+      width: 100%;
+      padding: 10px;
+      background: rgba(138,180,248,0.12);
+      border: 1px solid rgba(138,180,248,0.3);
+      color: #8AB4F8;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-run:hover { background: rgba(138,180,248,0.22); }
+
+    .result-box {
+      margin-top: 12px;
+      background: #0F0F13;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .status-ok   { color: #4CAF50; }
+    .status-err  { color: #FF5252; }
+    .status-info { color: #6B7280; }
+
+    .run-all-btn {
+      padding: 11px 24px;
+      background: #8AB4F8;
+      color: #0F0F13;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 24px;
+    }
+    .run-all-btn:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+  <h1>⌨️ AuraKeys — Backend Tester</h1>
+  <p class="subtitle">Apna backend URL aur admin password daalo, phir tests run karo.</p>
+
+  <!-- Config -->
+  <div class="config-box">
+    <label>Backend URL</label>
+    <input type="text" id="cfgUrl"   placeholder="http://localhost:3000   or   https://aurakeys-backend.vercel.app" />
+    <label>Admin Password</label>
+    <input type="password" id="cfgPass" placeholder="ADMIN_PASSWORD (from .env)" />
+  </div>
+
+  <button class="run-all-btn" onclick="runAll()">▶ Run All Tests</button>
+
+  <div class="tests-grid">
+
+    <!-- Test 1: Public Stats -->
+    <div class="test-card">
+      <h3><span class="method-badge method-get">GET</span> Public Stats</h3>
+      <div class="endpoint">/api/public-stats</div>
+      <button class="btn-run" onclick="runTest('publicStats')">Run</button>
+      <pre class="result-box" id="res-publicStats"></pre>
+    </div>
+
+    <!-- Test 2: Admin Stats -->
+    <div class="test-card">
+      <h3><span class="method-badge method-get">GET</span> Admin Stats</h3>
+      <div class="endpoint">/api/admin/stats  🔐</div>
+      <button class="btn-run" onclick="runTest('adminStats')">Run</button>
+      <pre class="result-box" id="res-adminStats"></pre>
+    </div>
+
+    <!-- Test 3: Admin Users -->
+    <div class="test-card">
+      <h3><span class="method-badge method-get">GET</span> Admin Users List</h3>
+      <div class="endpoint">/api/admin/users  🔐</div>
+      <button class="btn-run" onclick="runTest('adminUsers')">Run</button>
+      <pre class="result-box" id="res-adminUsers"></pre>
+    </div>
+
+    <!-- Test 4: Track Event (fake device) -->
+    <div class="test-card">
+      <h3><span class="method-badge method-post">POST</span> Track Event</h3>
+      <div class="endpoint">/api/track  (fake device data bhejna)</div>
+      <button class="btn-run" onclick="runTest('track')">Run</button>
+      <pre class="result-box" id="res-track"></pre>
+    </div>
+
+    <!-- Test 5: Admin User Detail -->
+    <div class="test-card">
+      <h3><span class="method-badge method-get">GET</span> Admin User Detail</h3>
+      <div class="endpoint">/api/admin/user?id=test-device-001  🔐</div>
+      <button class="btn-run" onclick="runTest('adminUser')">Run</button>
+      <pre class="result-box" id="res-adminUser"></pre>
+    </div>
+
+    <!-- Test 6: Auth check (wrong password) -->
+    <div class="test-card">
+      <h3><span class="method-badge method-get">GET</span> Auth Check (wrong pass)</h3>
+      <div class="endpoint">/api/admin/stats  — should return 401</div>
+      <button class="btn-run" onclick="runTest('authFail')">Run</button>
+      <pre class="result-box" id="res-authFail"></pre>
+    </div>
+
+  </div>
+
+  <script>
+    function getUrl()  { return document.getElementById('cfgUrl').value.trim().replace(/\/$/, ''); }
+    function getPass() { return document.getElementById('cfgPass').value.trim(); }
+
+    function showResult(id, text, isOk) {
+      const el = document.getElementById(`res-${id}`);
+      el.style.display = 'block';
+      el.className = `result-box ${isOk ? 'status-ok' : 'status-err'}`;
+      el.textContent = text;
+    }
+
+    async function runTest(name) {
+      const url  = getUrl();
+      const pass = getPass();
+      if (!url) { showResult(name, '❌ Backend URL daalo pehle.', false); return; }
+
+      showResult(name, '⏳ Testing...', true);
+      document.getElementById(`res-${name}`).className = 'result-box status-info';
+
+      try {
+        let res, label, opts;
+
+        switch (name) {
+
+          case 'publicStats':
+            res = await fetch(`${url}/api/public-stats`);
+            label = `Status: ${res.status}\n\n${JSON.stringify(await res.json(), null, 2)}`;
+            showResult(name, label, res.ok);
+            break;
+
+          case 'adminStats':
+            if (!pass) { showResult(name, '❌ Admin password daalo.', false); return; }
+            res = await fetch(`${url}/api/admin/stats`, {
+              headers: { 'Authorization': `Bearer ${pass}` }
+            });
+            label = `Status: ${res.status}\n\n${JSON.stringify(await res.json(), null, 2)}`;
+            showResult(name, label, res.ok);
+            break;
+
+          case 'adminUsers':
+            if (!pass) { showResult(name, '❌ Admin password daalo.', false); return; }
+            res = await fetch(`${url}/api/admin/users?limit=3`, {
+              headers: { 'Authorization': `Bearer ${pass}` }
+            });
+            label = `Status: ${res.status}\n\n${JSON.stringify(await res.json(), null, 2)}`;
+            showResult(name, label, res.ok);
+            break;
+
+          case 'track':
+            res = await fetch(`${url}/api/track`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                device: {
+                  device_id:       'test-device-001',
+                  device_name:     'Test Phone',
+                  android_version: '14',
+                  install_date:    new Date().toISOString(),
+                  last_use_date:   new Date().toISOString(),
+                },
+                events: [
+                  { device_id: 'test-device-001', event_type: 'app_open',     timestamp: new Date().toISOString() },
+                  { device_id: 'test-device-001', event_type: 'ai_used',      timestamp: new Date().toISOString(), metadata: 'Fix Grammar' },
+                  { device_id: 'test-device-001', event_type: 'theme_changed',timestamp: new Date().toISOString(), metadata: 'Aura Dark' },
+                ],
+              }),
+            });
+            label = `Status: ${res.status}\n\n${JSON.stringify(await res.json(), null, 2)}`;
+            showResult(name, label, res.ok);
+            break;
+
+          case 'adminUser':
+            if (!pass) { showResult(name, '❌ Admin password daalo.', false); return; }
+            res = await fetch(`${url}/api/admin/user?id=test-device-001`, {
+              headers: { 'Authorization': `Bearer ${pass}` }
+            });
+            label = `Status: ${res.status}\n\n${JSON.stringify(await res.json(), null, 2)}`;
+            showResult(name, label, res.ok);
+            break;
+
+          case 'authFail':
+            res = await fetch(`${url}/api/admin/stats`, {
+              headers: { 'Authorization': 'Bearer wrong-password-123' }
+            });
+            const d = await res.json();
+            label = `Status: ${res.status}\n\n${JSON.stringify(d, null, 2)}`;
+            showResult(name, label, res.status === 401);
+            break;
+        }
+
+      } catch (e) {
+        showResult(name, `❌ Error: ${e.message}\n\nKya backend chal raha hai?`, false);
+      }
+    }
+
+    async function runAll() {
+      const tests = ['publicStats', 'adminStats', 'adminUsers', 'track', 'adminUser', 'authFail'];
+      for (const t of tests) {
+        await runTest(t);
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+  </script>
+
+</body>
+</html>
