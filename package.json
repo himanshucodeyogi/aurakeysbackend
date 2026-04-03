@@ -1,0 +1,12 @@
+{
+  "name": "aurakeys-backend",
+  "version": "1.0.0",
+  "description": "AuraKeys analytics backend — Vercel serverless + MongoDB Atlas",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "mongodb": "^6.8.0"
+  }
+}
