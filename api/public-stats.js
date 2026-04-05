@@ -29,23 +29,21 @@ module.exports = async function handler(req, res) {
       total_installs,
       active_users,
       keyboardAgg,
-      aiAgg,
+      aiCount,
     ] = await Promise.all([
       db.collection('devices').countDocuments(),
       db.collection('devices').countDocuments({ last_use_date: { $gte: thirtyDaysAgo } }),
       db.collection('devices')
         .aggregate([{ $group: { _id: null, total: { $sum: '$total_keyboard_opens' } } }])
         .toArray(),
-      db.collection('devices')
-        .aggregate([{ $group: { _id: null, total: { $sum: '$total_ai_uses' } } }])
-        .toArray(),
+      db.collection('events').countDocuments({ event_type: 'ai_used' }),
     ]);
 
     const stats = {
       total_installs,
       active_users,
       keyboard_sessions: keyboardAgg[0]?.total || 0,
-      ai_actions:        aiAgg[0]?.total        || 0,
+      ai_actions:        aiCount,
       updated_at:        new Date().toISOString(),
     };
 

@@ -6,10 +6,19 @@
 const { connectToDatabase } = require('../../lib/db');
 const { requireAdmin }      = require('../../lib/auth');
 
+let cache = null;
+let cacheTime = 0;
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (!requireAdmin(req, res))  return;
   if (req.method !== 'GET')     return res.status(405).json({ error: 'Method not allowed' });
+
+  if (cache && Date.now() - cacheTime < CACHE_TTL) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.status(200).json(cache);
+  }
 
   try {
     const { db } = await connectToDatabase();
@@ -46,7 +55,7 @@ module.exports = async function handler(req, res) {
         .countDocuments({ install_date: { $gte: day7Ago } }),
     ]);
 
-    return res.status(200).json({
+    const result = {
       total_users,
       dau,
       wau,
@@ -56,7 +65,12 @@ module.exports = async function handler(req, res) {
       total_app_opens:      appOpenAgg[0]?.total    || 0,
       new_installs_7d:      recentInstalls,
       generated_at:         now.toISOString(),
-    });
+    };
+
+    cache     = result;
+    cacheTime = Date.now();
+    res.setHeader('X-Cache', 'MISS');
+    return res.status(200).json(result);
 
   } catch (err) {
     console.error('admin/stats error:', err);
