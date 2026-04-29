@@ -24,21 +24,30 @@ function nextMidnightUTC() {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
 }
 
+// In-memory cache — avoids DB round-trip on every request (Vercel keeps instances warm)
+let _blockedCache = { hashes: new Set(), fetchedAt: 0 };
+const CACHE_TTL_MS = 5 * 60 * 1000; // refresh every 5 minutes
+
 async function getBlockedHashes(db) {
+  const now = Date.now();
+  if (now - _blockedCache.fetchedAt < CACHE_TTL_MS) return _blockedCache.hashes;
   const docs = await db.collection('groq_key_blocks')
     .find({ blocked_until: { $gt: new Date() } }, { projection: { key_hash: 1 } })
     .toArray();
-  return new Set(docs.map(d => d.key_hash));
+  _blockedCache = { hashes: new Set(docs.map(d => d.key_hash)), fetchedAt: now };
+  return _blockedCache.hashes;
 }
 
 async function blockKey(db, key) {
-  const hash         = keyHash(key);
+  const hash          = keyHash(key);
   const blocked_until = nextMidnightUTC();
   await db.collection('groq_key_blocks').updateOne(
     { key_hash: hash },
     { $set: { key_hash: hash, blocked_until } },
     { upsert: true }
   );
+  // Invalidate in-memory cache so next request picks up the new block immediately
+  _blockedCache.fetchedAt = 0;
   console.warn(`Key ${hash} blocked until ${blocked_until.toISOString()}`);
 }
 
