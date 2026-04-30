@@ -28,6 +28,14 @@ function nextMidnightUTC() {
 let _blockedCache = { hashes: new Set(), fetchedAt: 0 };
 const CACHE_TTL_MS = 5 * 60 * 1000; // refresh every 5 minutes
 
+// Eagerly connect to DB and pre-warm the blocked-key cache when this module
+// is first loaded. By the time the first real request arrives the TCP/TLS
+// handshake to MongoDB is already done and the cache is populated, eliminating
+// the cold-start DB round-trip from the critical path.
+connectToDatabase()
+  .then(({ db }) => getBlockedHashes(db))
+  .catch(() => {}); // per-request error handling covers any failure here
+
 async function getBlockedHashes(db) {
   const now = Date.now();
   if (now - _blockedCache.fetchedAt < CACHE_TTL_MS) return _blockedCache.hashes;
